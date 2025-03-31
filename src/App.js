@@ -1,25 +1,67 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from 'react';
+import LoginScreenMockup from './components/LoginScreenMockup';
+import RepositoryDashboardMockup from './components/RepositoryDashboardMockup';
+import RepositoryDashboardWithModal from './components/RepositoryDashboardWithModal';
+import RecentProjectsDashboard from './components/RecentProjectsDashboard';
 
-function App() {
+const App = () => {
+  const [currentView, setCurrentView] = useState('login');
+
+  const renderView = () => {
+    switch (currentView) {
+      case 'login':
+        return <LoginScreenMockup onLogin={() => setCurrentView('repository')} />;
+      case 'repository':
+        return <RepositoryDashboardMockup onConnect={() => setCurrentView('modal')} />;
+      case 'modal':
+        return <RepositoryDashboardWithModal onSelect={() => setCurrentView('projects')} onCancel={() => setCurrentView('repository')} />;
+      case 'projects':
+        return <RecentProjectsDashboard onConnectNew={() => setCurrentView('modal')} />;
+      default:
+        return <LoginScreenMockup onLogin={() => setCurrentView('repository')} />;
+    }
+  };
+
+  // Navigation buttons for demo purposes
+  const renderNavigation = () => {
+    return (
+        <div className="fixed bottom-4 left-4 bg-gray-900 p-2 rounded-lg border border-gray-800 z-50">
+          <div className="flex gap-2">
+            <button
+                className={`px-3 py-1 rounded-md text-sm ${currentView === 'login' ? 'bg-accent-500 text-white' : 'bg-gray-800 text-gray-300'}`}
+                onClick={() => setCurrentView('login')}
+            >
+              Login
+            </button>
+            <button
+                className={`px-3 py-1 rounded-md text-sm ${currentView === 'repository' ? 'bg-accent-500 text-white' : 'bg-gray-800 text-gray-300'}`}
+                onClick={() => setCurrentView('repository')}
+            >
+              Connect Repo
+            </button>
+            <button
+                className={`px-3 py-1 rounded-md text-sm ${currentView === 'modal' ? 'bg-accent-500 text-white' : 'bg-gray-800 text-gray-300'}`}
+                onClick={() => setCurrentView('modal')}
+            >
+              Repo Modal
+            </button>
+            <button
+                className={`px-3 py-1 rounded-md text-sm ${currentView === 'projects' ? 'bg-accent-500 text-white' : 'bg-gray-800 text-gray-300'}`}
+                onClick={() => setCurrentView('projects')}
+            >
+              Projects
+            </button>
+          </div>
+        </div>
+    );
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+      <div>
+        {renderView()}
+        {renderNavigation()}
+      </div>
   );
-}
+};
 
 export default App;
