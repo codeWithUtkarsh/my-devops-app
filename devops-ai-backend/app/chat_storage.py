@@ -62,3 +62,34 @@ class ChatStorage:
             {"role": msg.role, "content": msg.content}
             for msg in reversed(messages)
         ]
+
+        def delete_chat(self, chat_id: str):
+            """Delete a chat and all its messages"""
+            # Delete messages first due to foreign key constraint
+            self.session.query(Message).filter(Message.chat_id == chat_id).delete()
+            self.session.query(Chat).filter(Chat.id == chat_id).delete()
+            self.session.commit()
+
+        def list_chats(self, limit: int = 10, offset: int = 0):
+            """List all chats with pagination"""
+            chats = (
+                self.session.query(Chat)
+                .order_by(Chat.updated_at.desc())
+                .offset(offset)
+                .limit(limit)
+                .all()
+            )
+
+            return [
+                {
+                    "id": chat.id,
+                    "created_at": chat.created_at,
+                    "updated_at": chat.updated_at,
+                    "message_count": (
+                        self.session.query(Message)
+                        .filter(Message.chat_id == chat.id)
+                        .count()
+                    )
+                }
+                for chat in chats
+            ]

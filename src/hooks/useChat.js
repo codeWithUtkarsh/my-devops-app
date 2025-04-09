@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
+
 export const useChat = (
   activeFile,
   fileContents,
@@ -9,16 +11,14 @@ export const useChat = (
   const [chatMessages, setChatMessages] = useState([
     {
       type: "system",
-      content:
-        "I've generated Terraform code for your Express.js API based on the analyzed repository structure. The infrastructure includes:",
+      content: "I'm your Terraform assistant. I can help you with:",
       list: [
-        "API Gateway for RESTful endpoints",
-        "Lambda functions for authentication and API logic",
-        "DynamoDB as a NoSQL database replacement for MongoDB",
-        "Parameter Store for environment variables and secrets",
+        "Writing and modifying Terraform configurations",
+        "AWS resource configuration",
+        "Best practices and security recommendations",
+        "Infrastructure optimization",
       ],
-      closing:
-        "You can edit any of the files to customize your infrastructure. What specific aspects would you like to modify?",
+      closing: "What would you like help with?",
     },
   ]);
   const [chatInput, setChatInput] = useState("");
@@ -26,86 +26,239 @@ export const useChat = (
   const [chatId, setChatId] = useState("1");
 
   // Mock responses based on keywords
-  const getMockResponse = (message) => {
-    if (message.toLowerCase().includes("lambda")) {
+  const getMockResponse = (input) => {
+    const lowerInput = input.toLowerCase();
+
+    // Lambda configuration
+    if (lowerInput.includes("lambda")) {
       return {
         type: "system",
-        content:
-          "I'll help you with Lambda configuration. Here are the key parameters you can modify:",
+        content: "Here's a Lambda function configuration in Terraform:",
         list: [
-          "Memory size (128MB to 10GB)",
-          "Timeout (up to 15 minutes)",
-          "Runtime environment",
-          "Environment variables",
+          `resource "aws_lambda_function" "example" {
+  filename      = "lambda_function.zip"
+  function_name = "example_lambda"
+  role          = aws_iam_role.lambda_role.arn
+  handler       = "index.handler"
+  runtime       = "nodejs16.x"
+
+  memory_size = 128
+  timeout     = 30
+
+  environment {
+    variables = {
+      ENV = "production"
+    }
+  }
+}`,
+          "You can adjust memory_size (128MB to 10GB)",
+          "Timeout can be set up to 15 minutes",
+          "Supports various runtimes (Node.js, Python, Java, etc.)",
         ],
-        closing: "Which of these would you like to adjust?",
+        closing:
+          "Would you like me to add this Lambda configuration to your current file?",
       };
     }
 
-    if (message.toLowerCase().includes("api gateway")) {
+    // API Gateway configuration
+    if (lowerInput.includes("api") || lowerInput.includes("gateway")) {
       return {
         type: "system",
-        content: "For API Gateway configuration, you can modify:",
+        content: "Here's an API Gateway configuration:",
         list: [
-          "Endpoint types (Regional, Edge, Private)",
-          "Authentication methods",
-          "Request/Response mappings",
-          "Stage variables",
+          `resource "aws_api_gateway_rest_api" "example" {
+  name        = "example-api"
+  description = "Example REST API"
+}
+
+resource "aws_api_gateway_resource" "example" {
+  rest_api_id = aws_api_gateway_rest_api.example.id
+  parent_id   = aws_api_gateway_rest_api.example.root_resource_id
+  path_part   = "example"
+}
+
+resource "aws_api_gateway_method" "example" {
+  rest_api_id   = aws_api_gateway_rest_api.example.id
+  resource_id   = aws_api_gateway_resource.example.id
+  http_method   = "POST"
+  authorization = "NONE"
+}`,
+          "Supports REST and HTTP APIs",
+          "Multiple integration types available",
+          "Can be connected to Lambda, HTTP endpoints, or other AWS services",
         ],
-        closing: "What aspects of the API Gateway would you like to configure?",
+        closing:
+          "Would you like me to help you set up this API Gateway configuration?",
       };
     }
 
-    if (message.toLowerCase().includes("dynamodb")) {
+    // DynamoDB configuration
+    if (lowerInput.includes("dynamodb")) {
       return {
         type: "system",
-        content: "For DynamoDB configuration, consider these settings:",
+        content: "Here's a DynamoDB table configuration:",
         list: [
-          "Read/Write capacity modes",
-          "Global secondary indexes",
-          "Encryption settings",
-          "Backup configurations",
+          `resource "aws_dynamodb_table" "example" {
+  name           = "example-table"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key       = "id"
+  range_key      = "created_at"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  attribute {
+    name = "created_at"
+    type = "S"
+  }
+
+  tags = {
+    Environment = "production"
+  }
+}`,
+          "Supports both provisioned and on-demand capacity",
+          "Global secondary indexes available",
+          "Point-in-time recovery and server-side encryption options",
         ],
-        closing: "Which DynamoDB settings would you like to modify?",
+        closing:
+          "Would you like me to add this DynamoDB configuration to your current file?",
+      };
+    }
+
+    // S3 bucket configuration
+    if (lowerInput.includes("s3") || lowerInput.includes("bucket")) {
+      return {
+        type: "system",
+        content: "Here's an S3 bucket configuration with best practices:",
+        list: [
+          `resource "aws_s3_bucket" "example" {
+  bucket = "my-unique-bucket-name"
+}
+
+resource "aws_s3_bucket_versioning" "example" {
+  bucket = aws_s3_bucket.example.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "example" {
+  bucket = aws_s3_bucket.example.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}`,
+          "Includes versioning configuration",
+          "Server-side encryption enabled",
+          "Best practices for security applied",
+        ],
+        closing: "Would you like me to add this S3 bucket configuration?",
       };
     }
 
     // Default response
     return {
       type: "system",
-      content: `I can help you with the ${activeFile} configuration. Here are some common tasks:`,
+      content: `I can help you with the ${activeFile} file. Here are some suggestions:`,
       list: [
-        "Modify resource configurations",
-        "Add new resources",
-        "Update provider settings",
-        "Configure variables and outputs",
+        "Add new AWS resources",
+        "Modify existing configurations",
+        "Implement security best practices",
+        "Optimize your infrastructure",
       ],
-      closing: "What would you like to do?",
+      closing: "What specific changes would you like to make?",
     };
+  };
+
+  // Function to call actual API
+  const callChatAPI = async (message) => {
+    try {
+      const response = await fetch(`${API_URL}/api/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          messages: [
+            {
+              role: "user",
+              content: message,
+            },
+          ],
+          // If you still need to send context, you could add it here
+          // context: {
+          //   activeFile,
+          //   fileContent: fileContents[activeFile],
+          // },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Chat API Error:", error);
+      return null;
+    }
   };
 
   const handleSendMessage = async () => {
     if (chatInput.trim()) {
       // Add user message
-      setChatMessages((prev) => [
-        ...prev,
-        { type: "user", content: chatInput },
-      ]);
+      const userMessage = { type: "user", content: chatInput };
+      setChatMessages((prev) => [...prev, userMessage]);
 
       // Clear input and show loading
       const messageToProcess = chatInput;
       setChatInput("");
       setIsLoading(true);
 
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      try {
+        // Try to call actual API first
+        const apiResponse = await callChatAPI(messageToProcess);
 
-      // Get mock response
-      const response = getMockResponse(messageToProcess);
+        if (apiResponse) {
+          // Use API response
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              type: "system",
+              ...apiResponse,
+            },
+          ]);
 
-      // Add system response
-      setChatMessages((prev) => [...prev, response]);
-      setIsLoading(false);
+          // Handle any file updates if included
+          if (apiResponse.fileUpdates) {
+            for (const update of apiResponse.fileUpdates) {
+              if (update.fileName && update.content) {
+                updateFileContent(update.fileName, update.content);
+                if (update.saveToS3) {
+                  await saveFileToS3(update.fileName, update.content);
+                }
+              }
+            }
+          }
+        } else {
+          // Fallback to mock response if API fails
+          const mockResponse = getMockResponse(messageToProcess);
+          setChatMessages((prev) => [...prev, mockResponse]);
+        }
+      } catch (error) {
+        console.error("Chat error:", error);
+        // Use mock response as fallback
+        const mockResponse = getMockResponse(messageToProcess);
+        setChatMessages((prev) => [...prev, mockResponse]);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -117,7 +270,7 @@ export const useChat = (
   };
 
   const enhancePrompt = (currentFile) => {
-    const enhancedPrompt = `I'm working on the file ${currentFile}. Here's what I'd like help with: ${chatInput}`;
+    const enhancedPrompt = `For the file ${currentFile}, I want to: ${chatInput}`;
     setChatInput(enhancedPrompt);
   };
 
@@ -145,3 +298,5 @@ export const useChat = (
     addSystemMessage,
   };
 };
+
+export default useChat;
