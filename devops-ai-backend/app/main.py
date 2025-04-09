@@ -61,8 +61,8 @@ async def chat(
 
         # Create streaming response
         async def generate():
-            stream = await client.messages.create(
-                model="claude-3-sonnet-20240320",
+            stream = client.messages.create(
+                model="claude-3-5-sonnet-latest",
                 max_tokens=8192,
                 messages=all_messages,
                 stream=True
@@ -70,7 +70,7 @@ async def chat(
 
             full_response = ""
 
-            async for chunk in stream:
+            for chunk in stream:
                 if chunk.type == "content_block_delta":
                     full_response += chunk.delta.text
                     yield f"data: {json.dumps({'text': chunk.delta.text})}\n\n"
